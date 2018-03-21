@@ -445,10 +445,10 @@ public class GcodeWriter {
 		for (int i = 0; i < total_num_layers; i++) {
 			// pausing at i_th layer
 			if (i == (pause_at_layer - 1)) {
-				outPut.write(String.format("G01 E%4.2f F%4.2f\n",new Object[] {(-E),  } )); // retract the filament; decrease the E parameter"
+				outPut.write(String.format("G01 E%4.2f F%4.2f\n",new Object[] {(-E -300.0)} )); // retract the filament; decrease the E parameter"
 				outPut.write(String.format("G04 P%d", new Object[] { pause_time})); 
 				// pause machine for x secs: G04 Pxxx where xxx is in milliseconds		
-				outPut.write(""); //  restore the previous filament coords; restore E parameter		
+				outPut.write(String.format("G01, E%4.2f F100\n", new Object[]{E+ 300.0})); //  restore the previous filament coords; restore E parameter		
 			}
 
 			// if the current layer is a bottom layer, fill it
