@@ -467,12 +467,13 @@ public class GcodeWriter {
 					this.printFrame(polygon, currentHeight);
 					currentHeight = currentHeight + layer_height;
 				}
-			}
-			// if cook_outer is true, then cook solid's shell before
-			// incrementing height z
-			if (cook_outer == 1) {
-				//cook solid's shell by calling cookFrame()
-				cookFrame(polygon, currentHeight);
+
+			        // if cook_outer is true, then cook solid's shell before
+			        // incrementing height z
+			        if (cook_outer == 1) {
+				        //cook solid's shell by calling cookFrame()
+				        cookFrame(polygon, currentHeight);
+			        }
 			}
 			currentHeight = currentHeight + layer_height;
 			polygon.scale(shrinkFactor);
