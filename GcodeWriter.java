@@ -83,8 +83,8 @@ public class GcodeWriter {
 	private static double nozzle_dia = 1.8D;// used to calculate unit_E
 	private static double extrusion_width = 1.5D * nozzle_dia;
 	private double E = 0; // global double E that tracks current
-									// coordinate of
-	// the coordinate
+						  // coordinate of
+						  //measured in cm
 
 	////////////////////////////////////////////////////
 	//////// variables for file output ////////////////
@@ -445,7 +445,8 @@ public class GcodeWriter {
 		for (int i = 0; i < total_num_layers; i++) {
 			// pausing at i_th layer
 			if (i == (pause_at_layer - 1)) {
-				outPut.write(String.format("G01 E%4.2f F%4.2f\n",new Object[] {(-E -300.0)} )); // retract the filament; decrease the E parameter"
+				outPut.write(String.format("G01 E%4.2f F%4.2f\n",new Object[] {(-5.0)} )); // retract the filament; decrease the E parameter"
+				 																		   // hardcoded 50mm retraction but will have to generalize with measuring tool
 				outPut.write(String.format("G04 P%d", new Object[] { pause_time})); 
 				// pause machine for x secs: G04 Pxxx where xxx is in milliseconds		
 				outPut.write(String.format("G01, E%4.2f F100\n", new Object[]{E+ 300.0})); //  restore the previous filament coords; restore E parameter		
