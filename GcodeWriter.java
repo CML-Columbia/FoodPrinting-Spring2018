@@ -151,7 +151,7 @@ public class GcodeWriter {
 		static_cook_height = Double.parseDouble((String) settings.get("static_cook_height"));
 		static_cook_time = Double.parseDouble((String) settings.get("static_cook_time"));
 		load_depth = Double.parseDouble((String) settings.get("load_depth")) + 26.0D;
-
+   		E = 0.0;
 	}
 
 	public void initFile(HashMap<String, String> settings) throws IOException {
