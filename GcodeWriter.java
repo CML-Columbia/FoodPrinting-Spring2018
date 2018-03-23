@@ -82,7 +82,7 @@ public class GcodeWriter {
 	private static double retract_after_dump = 3.0D;// not used *********
 	private static double nozzle_dia = 1.8D;// used to calculate unit_E
 	private static double extrusion_width = 1.5D * nozzle_dia;
-	private static double E = 0; // global double E that tracks current
+	private double E = 0; // global double E that tracks current
 									// coordinate of
 	// the coordinate
 
