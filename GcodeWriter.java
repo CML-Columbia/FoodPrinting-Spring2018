@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.*;
 
 public class GcodeWriter {
 
@@ -92,6 +93,8 @@ public class GcodeWriter {
 	private static File file;
 	private static FileWriter outPut;
 	private String filePath;
+	//create a .txt file that includes print speed and coordinates -- to be used by the shaker
+	Writer shaker = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("shakerInfo.txt"), "utf-8"));
 	////////// class variables end here///////
 
 	////// *****Constructor creates a file named fileName
@@ -163,6 +166,11 @@ public class GcodeWriter {
 		file = new File(fileName); // create a new .gcode file
 		outPut = new FileWriter(file);
 		filePath = file.getAbsolutePath();
+
+		//write speed to shakerInfo.txt as the first line
+		shaker.write(Double.toString(Double.valueOf(travel_speed)) + "\n");
+
+
 		//// ****************************************
 
 		/// printer calibration
@@ -196,6 +204,8 @@ public class GcodeWriter {
 			double speed = Double.valueOf(travel_speed);
 			outPut.write(
 					String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n", new Object[] { xCoord, yCoord, height, speed }));
+			
+
 		}
 
 		// this loop starts with moving to the first vertex
@@ -210,6 +220,8 @@ public class GcodeWriter {
 			double speed = Double.valueOf(print_speed);
 			outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f E%4.2f\n",
 					new Object[] { xCoord, yCoord, height, speed, E }));
+			//write coordinates to shakerInfo.txt as well. Only X, Y, Z
+			shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 		}
 	}
 
@@ -231,12 +243,14 @@ public class GcodeWriter {
 			outPut.write(
 					String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n", new Object[] { xCoord, yCoord, lift, speed }));
 			outPut.write(String.format("G01 Z%4.2f  F%4.2f\n", new Object[] { height, speed }));
+			shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 		} else { // go directly to the first vertex
 			double xCoord = p.getVertices().get(0)[0];
 			double yCoord = p.getVertices().get(0)[1];
 			double speed = Double.valueOf(travel_speed);
 			outPut.write(
 					String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n", new Object[] { xCoord, yCoord, height, speed }));
+			shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 		}
 
 		spacing = extrusion_width - layer_height * 0.21460183660255172D;
@@ -258,6 +272,7 @@ public class GcodeWriter {
 				double yCoord = p.getVertices().get(i % numOfSides)[1];
 				outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f E%4.2f\n",
 						new Object[] { xCoord, yCoord, Double.valueOf(height), Double.valueOf(print_speed), E }));
+				shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 				i++;
 			}
 			// print the n_th side of polygon, then jump (without printing) to
@@ -271,6 +286,7 @@ public class GcodeWriter {
 				double speed = Double.valueOf(print_speed);
 				outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f E%4.2f\n",
 						new Object[] { xCoord, yCoord, Double.valueOf(height), speed, E }));
+				shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 
 				// update radius
 				currentRadius = p.getRadius();
@@ -283,6 +299,7 @@ public class GcodeWriter {
 				speed = Double.valueOf(travel_speed);
 				outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f E%4.2f\n",
 						new Object[] { xCoord, yCoord, Double.valueOf(height), speed, E }));
+				shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 				i = 1;
 			}
 			// update radius
@@ -353,7 +370,7 @@ public class GcodeWriter {
 			double speed = Double.valueOf(travel_speed);
 			outPut.write(
 					String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n", new Object[] { xCoord, yCoord, lift, speed }));
-			outPut.write(String.format("G01 Z%4.2f  F%4.2f\n", new Object[] { height, speed }));
+			outPut.write(String.format("G01 Z%4.2f F%4.2f\n", new Object[] { height, speed }));
 		} else { // go directly to the first vertex
 			double xCoord = p.getVertices().get(0)[0];
 			double yCoord = p.getVertices().get(0)[1];
@@ -447,6 +464,8 @@ public class GcodeWriter {
 			if (i == (pause_at_layer - 1)) {
 				outPut.write(String.format("G01 E%4.2f F%4.2f\n",new Object[] {(-5.0)} )); // retract the filament; decrease the E parameter"
 				 																		   // hardcoded 50mm retraction but will have to generalize with measuring tool
+				//temporary hardcoded move backward to allow food team to test shaker
+				//outPut.write(String.format("GO1"))
 				outPut.write(String.format("G04 P%d", new Object[] { pause_time})); 
 				// pause machine for x secs: G04 Pxxx where xxx is in milliseconds		
 				outPut.write(String.format("G01, E%4.2f F100\n", new Object[]{E+ 300.0})); //  restore the previous filament coords; restore E parameter		
@@ -489,6 +508,7 @@ public class GcodeWriter {
 	public void closeFile() throws IOException {
 		outPut.write("G28\n");
 		outPut.close();
+		shaker.close();
 	}
 
 	// return path to output file
