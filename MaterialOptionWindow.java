@@ -74,7 +74,7 @@ public class MaterialOptionWindow extends JFrame implements java.awt.event.Actio
 			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for 1 material", 1);
 			wd.setDefaultCloseOperation(3);
 		} else if (e.getSource() == two) {
-			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for 2 materials", 2);
+			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for Base-Powder", 2);
 			wd.setDefaultCloseOperation(3);
 		} else if (e.getSource() == three) {
 			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for 3 materials", 3);

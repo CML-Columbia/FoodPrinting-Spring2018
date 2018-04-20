@@ -26,6 +26,15 @@ public class GcodeWriter {
 	private static double layer_height = 1.2; // according to default in GUI
 	private static double z_lift = 20.0D;
 	private static double print_speed; // used in fillLayer() and printFrame()
+	
+	////////////////////////////////////////////////////
+	//////// variables for materials ////// ////////////
+	////////////////////////////////////////////////////
+	private static Material mat1 = null;
+	private static Material mat2 = null;
+	private static Material mat3 = null;
+	private static Material currentMat;// keeps track of the material the
+	// printer is currently printing with
 
 	////////////////////////////////////////////////////
 	//////// variables for solid's geometry ////////////
@@ -45,8 +54,7 @@ public class GcodeWriter {
 	private static int bottom_thickness;// used in buildSolid()
 	private static int bottom_layers;// used in buildSolid()
 	private static double bed_z; // used in buildSolid()
-	private static int pause_at_layer;
-	private static int pause_time;
+	// used in pickUpMaterial()
 
 	////////////////////////////////////////////////////
 	//////// variables for trace cooking ///////////////
@@ -61,11 +69,6 @@ public class GcodeWriter {
 									// buildSolid()
 	// to specify whether to cook solid's shell or not ******
 
-	////////////////////////////////////////////////////
-	//////// variables for static cooking ///////////////
-	////////////////////////////////////////////////////
-	private static double static_cook_height; // not used
-	private static double static_cook_time;// not used
 
 	////////////////////////////////////////////////////
 	//////// variables for extruding ///////////////////
@@ -84,28 +87,33 @@ public class GcodeWriter {
 	private static double nozzle_dia = 1.8D;// used to calculate unit_E
 	private static double extrusion_width = 1.5D * nozzle_dia;
 	private double E = 0; // global double E that tracks current
-						  // coordinate of
-						  //measured in cm
-
+							// coordinate of
+							// measured in cm
+	
+	////////////////////////////////////////////////////
+	////////variables for power dispense(shaking) //////
+	////////////////////////////////////////////////////
+	private static double shakeSpeed;
+	private static int numOfShakes;
+	private static double shakeHeightOffSet;
+	
 	////////////////////////////////////////////////////
 	//////// variables for file output ////////////////
 	////////////////////////////////////////////////////
 	private static File file;
 	private static FileWriter outPut;
 	private String filePath;
-	//create a .txt file that includes print speed and coordinates -- to be used by the shaker
-	Writer shaker = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("shakerInfo.txt"), "utf-8"));
+
 	////////// class variables end here///////
 
-	////// *****Constructor creates a file named fileName
-	public GcodeWriter() throws IOException // must end in .gcode
-	{
+	/// default constructor
+	public GcodeWriter() throws IOException {
 
 	}
 
 	// takes in values from the GUI and initializes GcodeWriter's variables with
 	// them
-	public void initFromGUI(HashMap<String, String> settings) {
+	public void initFromGUI(HashMap<String, String> settings, int option) {
 		////// ****Begin initializing all member variables with values stored in
 		// PyrWindow.entries that have been inserted by users. Obtaining these
 		////// values from the HashMap and parse for double-values
@@ -118,10 +126,6 @@ public class GcodeWriter {
 		side_count = Integer.parseInt((String) settings.get("side_count"));
 		x_center = Integer.parseInt((String) settings.get("x_center"));
 		y_center = Integer.parseInt((String) settings.get("y_center"));
-		pause_at_layer = Integer.parseInt((String) settings.get("pause_at_layer"));
-		pause_time = Integer.parseInt((String) settings.get("pause_at_layer"));
-		pause_time *= 1000.0; //convert to millisecs
-
 		top_thickness = Integer.parseInt((String) settings.get("top_thickness"));
 		bottom_thickness = Integer.parseInt((String) settings.get("bottom_thickness"));
 		bottom_layers = Integer.parseInt((String) settings.get("bottom_layers"));
@@ -133,7 +137,7 @@ public class GcodeWriter {
 		// compute unit_E (a filament coords unit)
 		double syringe_dia = 22.5D;
 		double nozzle_dia = 1.8D;
-		double extrusion_multiplier = Double.parseDouble((String) settings.get("extrusion_multiplier"));
+		double extrusion_multiplier = Double.parseDouble((String) settings.get("extrusion_multiplier_1"));
 		// define extrusion_width
 		double extrusion_width = 1.5D * nozzle_dia;
 		// define unit_E
@@ -151,10 +155,20 @@ public class GcodeWriter {
 																			// a
 																			// boolean(1;0)
 		spacing = extrusion_width - layer_height * 0.21460183660255172D;
-		static_cook_height = Double.parseDouble((String) settings.get("static_cook_height"));
-		static_cook_time = Double.parseDouble((String) settings.get("static_cook_time"));
-		load_depth = Double.parseDouble((String) settings.get("load_depth")) + 26.0D;
-   		E = 0.0;
+		//load_depth = Double.parseDouble((String) settings.get("load_depth")) + 26.0D;
+		E = 0.0;
+		//create a base Material object
+		int slotNum = Integer.parseInt((String) settings.get("baseMatSlot"));
+		mat1 = new Material(slotNum, extrusion_multiplier);
+		
+		if(option == 2) // printing with 2 materials(for shaker), init from multimaterial tab
+		{
+			int powderSlotNum = Integer.parseInt((String) settings.get("powderSlot"));
+			mat2 = new Material(powderSlotNum, 1.0);			
+			shakeSpeed = Double.parseDouble((String) settings.get("shake_speed"));
+			numOfShakes = Integer.parseInt((String) settings.get("numOfShakes"));
+			shakeHeightOffSet = Double.parseDouble((String) settings.get("shake_height_offSet"));			
+		}
 	}
 
 	public void initFile(HashMap<String, String> settings) throws IOException {
@@ -166,11 +180,6 @@ public class GcodeWriter {
 		file = new File(fileName); // create a new .gcode file
 		outPut = new FileWriter(file);
 		filePath = file.getAbsolutePath();
-
-		//write speed to shakerInfo.txt as the first line
-		shaker.write(Double.toString(Double.valueOf(travel_speed)) + "\n");
-
-
 		//// ****************************************
 
 		/// printer calibration
@@ -204,7 +213,6 @@ public class GcodeWriter {
 			double speed = Double.valueOf(travel_speed);
 			outPut.write(
 					String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n", new Object[] { xCoord, yCoord, height, speed }));
-			
 
 		}
 
@@ -220,8 +228,6 @@ public class GcodeWriter {
 			double speed = Double.valueOf(print_speed);
 			outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f E%4.2f\n",
 					new Object[] { xCoord, yCoord, height, speed, E }));
-			//write coordinates to shakerInfo.txt as well. Only X, Y, Z
-			shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 		}
 	}
 
@@ -243,14 +249,12 @@ public class GcodeWriter {
 			outPut.write(
 					String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n", new Object[] { xCoord, yCoord, lift, speed }));
 			outPut.write(String.format("G01 Z%4.2f  F%4.2f\n", new Object[] { height, speed }));
-			shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 		} else { // go directly to the first vertex
 			double xCoord = p.getVertices().get(0)[0];
 			double yCoord = p.getVertices().get(0)[1];
 			double speed = Double.valueOf(travel_speed);
 			outPut.write(
 					String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n", new Object[] { xCoord, yCoord, height, speed }));
-			shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 		}
 
 		spacing = extrusion_width - layer_height * 0.21460183660255172D;
@@ -272,7 +276,6 @@ public class GcodeWriter {
 				double yCoord = p.getVertices().get(i % numOfSides)[1];
 				outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f E%4.2f\n",
 						new Object[] { xCoord, yCoord, Double.valueOf(height), Double.valueOf(print_speed), E }));
-				shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 				i++;
 			}
 			// print the n_th side of polygon, then jump (without printing) to
@@ -286,7 +289,6 @@ public class GcodeWriter {
 				double speed = Double.valueOf(print_speed);
 				outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f E%4.2f\n",
 						new Object[] { xCoord, yCoord, Double.valueOf(height), speed, E }));
-				shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 
 				// update radius
 				currentRadius = p.getRadius();
@@ -299,7 +301,6 @@ public class GcodeWriter {
 				speed = Double.valueOf(travel_speed);
 				outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f E%4.2f\n",
 						new Object[] { xCoord, yCoord, Double.valueOf(height), speed, E }));
-				shaker.write(String.format("%4.2f %4.2f %4.2f\n", new Object[] { xCoord, yCoord, height}));
 				i = 1;
 			}
 			// update radius
@@ -435,7 +436,7 @@ public class GcodeWriter {
 	////// cooking food-solid's layers.
 	// buildSolid() privately calls printFrame(), fillLayer(),
 	// and/or cookFrame() and cookFilledLayer() when building food solid
-	public void buildSolid() throws IOException {
+	public void buildSolid(int option) throws IOException {
 		Polygon polygon = new Polygon(side_count, radius);
 		polygon.translate(x_center, y_center);
 		double currentHeight = bed_z;
@@ -451,26 +452,17 @@ public class GcodeWriter {
 		double shrinkFactor = (1.0 - ((solidHeight) / (2 * currentRadius * total_num_layers)));
 		// this current shrink factor scales the base polygon so that the final
 		// solid has a height
-		// that is 2 times its baseRadius. In other words, the final solid -if not twisted- will
+		// that is 2 times its baseRadius. In other words, the final solid -if
+		// not twisted- will
 		// look from sideview like a triangle with a height that is 2 times its
 		// baseRadius.
-
 		
+
 		////////////////////////////////////////////////
 		//////////// layers printing loop //////////////
 		////////////////////////////////////////////////
 		for (int i = 0; i < total_num_layers; i++) {
-			// pausing at i_th layer
-			if (i == (pause_at_layer - 1)) {
-				outPut.write(String.format("G01 E%4.2f F%4.2f\n",new Object[] {(-5.0)} )); // retract the filament; decrease the E parameter"
-				 																		   // hardcoded 50mm retraction but will have to generalize with measuring tool
-				//temporary hardcoded move backward to allow food team to test shaker
-				//outPut.write(String.format("GO1"))
-				outPut.write(String.format("G04 P%d", new Object[] { pause_time})); 
-				// pause machine for x secs: G04 Pxxx where xxx is in milliseconds		
-				outPut.write(String.format("G01, E%4.2f F100\n", new Object[]{E+ 300.0})); //  restore the previous filament coords; restore E parameter		
-			}
-
+			
 			// if the current layer is a bottom layer, fill it
 			if (i < bottom_layers) {
 				for (int j = 0; j < bottom_thickness; j++) {
@@ -478,22 +470,50 @@ public class GcodeWriter {
 					currentHeight = currentHeight + layer_height;
 				}
 				if (cook_outer == 1) {
-					//cook filled base Layer
+					// cook filled base Layer
 					cookFilledLayer(polygon, currentHeight);
-				}				
-			} 
-			else {
+				}
+				if (option == 2)// if powder
+				{
+					//drop mat1 and pick up mat2(powder)
+					dropMaterial(mat1);
+					pickUpMaterial(mat2);
+					double x = polygon.getCenter()[0];
+					double y = polygon.getCenter()[1];				
+					spotDispensePowder(mat2, x, y , (currentHeight + shakeHeightOffSet));
+					dropMaterial(mat2);
+					pickUpMaterial(mat1);
+				}
+			} else {
 				for (int k = 0; k < top_thickness; k++) {
-					this.printFrame(polygon, currentHeight);
+					if(option == 2)
+					{
+						this.fillLayer(polygon, currentHeight);
+					}
+					else if (option == 1)
+					{
+						this.printFrame(polygon, currentHeight);
+					}
 					currentHeight = currentHeight + layer_height;
 				}
 
-			        // if cook_outer is true, then cook solid's shell before
-			        // incrementing height z
-			        if (cook_outer == 1) {
-				        //cook solid's shell by calling cookFrame()
-				        cookFrame(polygon, currentHeight);
-			        }
+				// if cook_outer is true, then cook solid's shell before
+				// incrementing height z
+				if (cook_outer == 1) {
+					// cook solid's shell by calling cookFrame()
+					cookFrame(polygon, currentHeight);
+				}
+				if (option == 2)// if powder
+				{
+					//drop mat1 and pick up mat2(powder)
+					dropMaterial(mat1);
+					pickUpMaterial(mat2);
+					double x = polygon.getCenter()[0];
+					double y = polygon.getCenter()[1];					
+					spotDispensePowder(mat2, x, y , (currentHeight + shakeHeightOffSet));
+					dropMaterial(mat2);
+					pickUpMaterial(mat1);
+				}
 			}
 			currentHeight = currentHeight + layer_height;
 			polygon.scale(shrinkFactor);
@@ -502,19 +522,100 @@ public class GcodeWriter {
 			polygon.rotate(twist_angle);
 		}
 		///////// ****** layers printing loop ends here
+		dropMaterial(mat1); // drop mat1 at the end of entire print
 	}
 
 	// bring head to home and close file
 	public void closeFile() throws IOException {
-		outPut.write("G28\n");
+		outPut.write("G01 X0.0 Y200.00 Z80.00 F2000.00\n"); 
 		outPut.close();
-		shaker.close();
 	}
 
 	// return path to output file
 	public String getFilePath() {
 		return filePath;
-
 	}
 
+	// pick up a material syriange from the rack
+	// needs to later make private; now public for testing
+	// picks up material ONLY IF tool head is not carrying any syringe
+	private void pickUpMaterial(Material mat) throws IOException {
+		if (currentMat == null) {
+			// 1. retract plunger if not already retracted
+			outPut.write(String.format("G01 E%4.2f F100\n", new Object[] { -60.00 }));
+			// 2. clear z to ceiling
+			double speed = Double.valueOf(2000.0);
+			final double z_clear = 80.00;
+			double z_insert = 32.00;//the height at which to insert syringe into its slot
+			outPut.write(String.format("G01 Z%4.2f F%4.2f\n", new Object[] { z_clear, speed }));
+			// 3. align head with material's slot; 30 mm away from material's
+			// slot
+			// in the y direction
+			outPut.write(
+					String.format("G01 X%4.2f Y%4.2f F%4.2f\n", new Object[] { mat.getRackCoord()[0], 30.00, speed }));
+			// 4. lower z coords to material's slot altitude: z = 15.00 mm
+			outPut.write(String.format("G01 Z%4.2f F%4.2f\n", new Object[] { mat.getRackCoord()[2], speed }));
+			// 5. moves into material slot to magnet-snap
+			outPut.write(String.format("G01 Y%4.2f F%4.2f\n", new Object[] { mat.getRackCoord()[1], speed }));
+			// 6. raise to syringe to z = 32.00 (z_insert)
+			outPut.write(String.format("G01 Z%4.2f F%4.2f\n", new Object[] { z_insert, speed }));
+			// 7. and move back away from material's slot
+			outPut.write(String.format("G01 Y%4.2f F%4.2f\n", new Object[] { 30.00, speed }));
+			// 8. clear z to ceiling
+			outPut.write(String.format("G01 Z%4.2f F%4.2f\n", new Object[] { z_clear, speed }));
+			// 9. restore plunger to picked up Material's E value. Update global E to mat.E_curr
+			outPut.write(String.format("G01, E%4.2f F100\n", new Object[] { mat.E_curr }));
+			E = mat.E_curr;
+			// 10. update currentMat to the picked up Material
+			currentMat = mat;
+		}
+		
+		
+	}
+
+	private void dropMaterial(Material mat) throws IOException {
+		//0. update Material E_curr, which is the E-coords the plunger left off for material mat
+		mat.updateE_curr(E);
+		final double z_clear = 80.00; //z_clear is defined as ceiling height
+		double speed = Double.valueOf(2000.0);
+		final double z_insert = 32.00;
+		// 1. retract plunger to -60.00
+		outPut.write(String.format("G01 E%4.2f F100.0\n", new Object[] { (-60.0) }));
+		// 2. clear z to ceiling
+		outPut.write(String.format("GO1 Z%4.2f F%4.2f\n", Double.valueOf(z_clear), speed)); 
+		// move to coordinates of rack (x,y, z_insert)
+		double[] matCoords = mat.getRackCoord();
+		double x = matCoords[0];
+		double y = matCoords[1];
+		double z = matCoords[2];
+		// 3. align with material's slot
+		outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n", new Object[] { x, 30.00, z_insert, speed }));
+		// 4. move into slot
+		outPut.write(String.format("G01 Y%4.2f F%4.2f\n", new Object[] { y, speed }));
+		// 5. drop to z= 15.00
+		outPut.write(String.format("GO1 Z%4.2f F%4.2f\n", new Object[] { z, speed }));
+		// 6. move backward by 3 cm in y direction
+		outPut.write(String.format("GO1 Y%4.2f F%4.2f\n", new Object[] { 30.00, speed }));
+		// 7. clear z to ceiling
+		outPut.write(String.format("GO1 Z%4.2f F%4.2f\n\n", Double.valueOf(z_clear), speed));
+		currentMat = null; //this means that after a drop, the toolHead doesn't carry any material
+	}
+
+	private void spotDispensePowder(Material mat, double x, double y, double z) throws IOException
+	{ 
+		//1.Connect plunger with fan's shaft
+		outPut.write(String.format("G01 E%4.2f F100.0\n", new Object[] { mat.E_curr }));		
+		//2.Move to dispense spot
+		outPut.write(String.format("G01 X%4.2f Y%4.2f Z%4.2f F%4.2f\n",
+				new Object[] { x, y, z, travel_speed }));		
+		//3.Shake for numOfShakes times
+		for(int i = 0; i < numOfShakes; i++)
+		{
+			outPut.write(String.format("G01 E%4.2f F%4.2f\n",
+					new Object[] { 2.00, shakeSpeed }));
+			outPut.write(String.format("G01 E%4.2f F%4.2f\n",
+					new Object[] { 2.00, shakeSpeed }));		
+		}
+		outPut.write("G04 P2000\n");// pause for 2 seconds after a shake
+	}
 }
