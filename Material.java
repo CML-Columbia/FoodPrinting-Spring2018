@@ -1,6 +1,5 @@
 
 
-
 import java.util.HashMap; 
 
 public class Material {
@@ -13,13 +12,13 @@ public class Material {
 
 	private static void initMap(){
 		coordinates = new HashMap<Integer, double[]>();
-		coordinates.put(1, new double[]{1.0, 0.0, 15.0});
-		coordinates.put(2, new double[]{46.0, 0.0, 15.0});
-		coordinates.put(3, new double[]{89.0, 0.0, 15.0});
-		coordinates.put(4, new double[]{132.0, 0.0, 15.0});
-		coordinates.put(5, new double[]{175.0, 0.0, 15.0});
-		coordinates.put(6, new double[]{218.0, 0.0, 15.0});
-		coordinates.put(7, new double[]{261.0, 0.0, 15.0});
+		coordinates.put(1, new double[]{1.0, 0.0, 25.0});
+		coordinates.put(2, new double[]{45.5, 0.0, 25.0});
+		coordinates.put(3, new double[]{89.0, 0.0, 25.0});
+		coordinates.put(4, new double[]{132.0, 0.0, 25.0});
+		coordinates.put(5, new double[]{175.0, 0.0, 25.0});
+		coordinates.put(6, new double[]{218.0, 0.0, 25.0});
+		coordinates.put(7, new double[]{261.0, 0.0, 25.0});
 	}
 
 	public Material(int materialNumber, double extrusionMultiplier) {
