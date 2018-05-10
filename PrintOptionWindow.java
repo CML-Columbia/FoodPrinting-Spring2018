@@ -86,10 +86,10 @@ public class PrintOptionWindow extends JFrame implements java.awt.event.ActionLi
 		entries.add(new PrintOptionWindow.Entry("side_count", "3", "Number of polygon's sides", "Basic Settings"));
 		entries.add(new PrintOptionWindow.Entry("print_speed", "1200", "Print Speed (mm/sec)", "Basic Settings"));
 		entries.add(new PrintOptionWindow.Entry("twist_angle", "3", "Twist Angle per Layer (degrees)", "Basic Settings"));
-		entries.add(new PrintOptionWindow.Entry("bed_z", "11", "Initial z coordinate (11 == bed's height)",
+		entries.add(new PrintOptionWindow.Entry("bed_z", "18", "Initial z coordinate (18 == bed's height)",
 				"Basic Settings"));
 		//***** Entries under Cooking Settings tab
-		entries.add(new PrintOptionWindow.Entry("cook_outer", "1", "Cook? yes (1) / no (0)", "Cooking Settings"));
+		entries.add(new PrintOptionWindow.Entry("cook_outer", "0", "Cook? yes (1) / no (0)", "Cooking Settings"));
 		entries.add(new PrintOptionWindow.Entry("cook_frame_speed", "200", "Speed when cooking shell (mm/sec)",
 				"Cooking Settings"));
 		entries.add(
@@ -142,33 +142,55 @@ public class PrintOptionWindow extends JFrame implements java.awt.event.ActionLi
 //					"Multimaterial Settings"));
 //			entries.add(new PrintOptionWindow.Entry("cook_lap_on_fill", "2", "n : Cook every nth layer on fill",
 //					"Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("numOfShakes", "5", "Number of shakes",
+			entries.add(new PrintOptionWindow.Entry("numOfShakes", "5", "Number of Powder Shakes",
 					"Multimaterial Settings"));
 			entries.add(new PrintOptionWindow.Entry("shake_speed", "5000.00", "Shake Speed (mm/minute)",
 					"Multimaterial Settings"));
 			entries.add(new PrintOptionWindow.Entry("shake_height_offSet", "20.00", "Shaker's height offset (mm)",
 					"Multimaterial Settings"));
 		} else if (fileNumber == 3) {
-			entries.add(new PrintOptionWindow.Entry("fill_layers_count", "20", "number of layers to fill (<20)",
+//			entries.add(new PrintOptionWindow.Entry("fill_layers_count", "20", "number of layers to fill (<20)",
+//					"Multimaterial Settings"));
+//			entries.add(new PrintOptionWindow.Entry("load_depth_1", "0", "level of fill material 1 (slot 1)",
+//					"Multimaterial Settings"));
+//			entries.add(new PrintOptionWindow.Entry("load_depth_3", "0", "level of fill material 2 (slot 2)",
+//					"Multimaterial Settings"));
+//			entries.add(new PrintOptionWindow.Entry("load_depth_2", "0", "level of outer material (slot 3)",
+//					"Multimaterial Settings"));	
+			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_1", "1.0", "Extrusion Multiplier of Base Material",
 					"Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("load_depth_1", "0", "level of fill material 1 (slot 1)",
+			entries.add(new PrintOptionWindow.Entry("baseMatSlot", "2", "Slot Number of Base Material",
 					"Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("load_depth_3", "0", "level of fill material 2 (slot 2)",
+			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_2", "1.0", "Extrusion Multiplier of Top Material",
 					"Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("load_depth_2", "0", "level of outer material (slot 3)",
+			entries.add(new PrintOptionWindow.Entry("mat2Slot", "3", "Slot Number of Top Material",
 					"Multimaterial Settings"));	
-			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_1", "1.0", "Extrusion Multiplier of fill material 1",
-					"Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_3", "1.0", "Extrusion Multiplier of fill material 2",
-					"Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_2", "1.0", "Extrusion Multiplier of outer material",
-					"Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("cook_fill", "1", "Cook fill yes (1) / no (0)", "Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("cook_speed_fill", "200", "Cook speed of fill material",
-					"Multimaterial Settings"));
-			entries.add(new PrintOptionWindow.Entry("cook_lap_on_fill", "2", "n : Cook every nth layer on fill",
-					"Multimaterial Settings"));
+//			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_3", "1.0", "Extrusion Multiplier of fill material 2",
+//					"Multimaterial Settings"));
+//			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_2", "1.0", "Extrusion Multiplier of outer material",
+//					"Multimaterial Settings"));
+//			entries.add(new PrintOptionWindow.Entry("cook_fill", "1", "Cook fill yes (1) / no (0)", "Multimaterial Settings"));
+//			entries.add(new PrintOptionWindow.Entry("cook_speed_fill", "200", "Cook speed of fill material",
+//					"Multimaterial Settings"));
+//			entries.add(new PrintOptionWindow.Entry("cook_lap_on_fill", "2", "n : Cook every nth layer on fill",
+//					"Multimaterial Settings"));
 		}
+		else if(fileNumber == 4) {
+			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_1", "1.0", "Extrusion Multiplier of Outer(base) Material",
+					"Multimaterial Settings"));
+			entries.add(new PrintOptionWindow.Entry("baseMatSlot", "2", "Slot Number of Base Material",
+					"Multimaterial Settings"));
+			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_2", "1.0", "Extrusion Multiplier of Inner Material 1",
+					"Multimaterial Settings"));
+			entries.add(new PrintOptionWindow.Entry("mat2Slot", "3", "Slot Number of Top Material",
+					"Multimaterial Settings"));	
+			entries.add(new PrintOptionWindow.Entry("extrusion_multiplier_3", "1.0", "Extrusion Multiplier of Inner Material 2",
+					"Multimaterial Settings"));
+			entries.add(new PrintOptionWindow.Entry("mat3Slot", "4", "Slot Number of Top Material",
+					"Multimaterial Settings"));						
+		}
+		
+		
 
 		///// Initial Error occured here because variables like tab, label, and
 		///// field are not declared
@@ -214,6 +236,7 @@ public class PrintOptionWindow extends JFrame implements java.awt.event.ActionLi
 			(panels.get("Multimaterial Settings")).add(generate);
 			(panels.get("Multimaterial Settings")).add(load);
 			add(tabbedPane);
+			
 		}
 	} 
 	////////////////****** init() method ends here
@@ -264,8 +287,24 @@ public class PrintOptionWindow extends JFrame implements java.awt.event.ActionLi
 				} 
 				else if (fileNumber == 3) {
 					//path = MultiMaterial.writeGcode(settings);
+					GcodeWriter gcodewriter = new GcodeWriter();
+				    gcodewriter.initFromGUI(settings, 3); 
+				    gcodewriter.initFile(settings); 
+				    gcodewriter.buildSolid(3);
+				    gcodewriter.closeFile();
+				    path = gcodewriter.getFilePath();
 				}
 				/////**********MULTI-MATERIAL OPTIONS
+				else if (fileNumber == 4) {
+					//path = MultiMaterial.writeGcode(settings);
+					GcodeWriter gcodewriter = new GcodeWriter();
+				    gcodewriter.initFromGUI(settings, 4); 
+				    gcodewriter.initFile(settings); 
+				    gcodewriter.buildSolid(4);
+				    gcodewriter.closeFile();
+				    path = gcodewriter.getFilePath();
+				}
+				
 				
 				saveConfig(settings);
 				JOptionPane.showMessageDialog(this, "Gcode Generated at " + path);

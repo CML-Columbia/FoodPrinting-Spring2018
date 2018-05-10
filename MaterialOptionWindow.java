@@ -21,6 +21,7 @@ public class MaterialOptionWindow extends JFrame implements java.awt.event.Actio
 	JRadioButton one;
 	JRadioButton two;
 	JRadioButton three;
+	JRadioButton four;
 	JTabbedPane tabbedPane;
 
 	public MaterialOptionWindow(String title) {
@@ -36,18 +37,20 @@ public class MaterialOptionWindow extends JFrame implements java.awt.event.Actio
 		tabbedPane = new JTabbedPane(); // create a new panel of tabs
 
 		// create label for number of materials
-		JLabel num_materials = new JLabel("Number of materials", 2);
+		JLabel num_materials = new JLabel("Printing Options", 2);
 
 		JPanel radioPanel = new JPanel();// create a new panel for radio?
 
 		// create 3 new buttons and add them to radioPanel
-		one = new JRadioButton("1");
-		two = new JRadioButton("2");
-		three = new JRadioButton("3");
-		radioPanel.setLayout(new GridLayout(1, 3)); // gridlayout(low, columns)
+		one = new JRadioButton("Single Material"); //file ==1
+		two = new JRadioButton("Base-Powder");//file == 2
+		three = new JRadioButton("Military Demo"); //file == 3
+		four = new JRadioButton("Triple Materials"); //file == 4
+		radioPanel.setLayout(new GridLayout(3, 1)); // gridlayout(row, columns)
 		radioPanel.add(one);
 		radioPanel.add(two);
 		radioPanel.add(three);
+		radioPanel.add(four);
 
 		// The 3 buttons on radioPnel listen for inputs(user selection)
 		// If the user clicks on one of these 3 buttons, the actionPerformed()
@@ -55,15 +58,16 @@ public class MaterialOptionWindow extends JFrame implements java.awt.event.Actio
 		one.addActionListener(this);
 		two.addActionListener(this);
 		three.addActionListener(this);
+		four.addActionListener(this);
 
 		// create a new panel, p, with 2-column gridlayout
 		// this panel contains the "number of materials" label
 		// and also 3 select buttons
 		JPanel p = new JPanel(new GridLayout(0, 2));
-		panels.put("Materials", p); // hash the p panel
-		tabbedPane.addTab("Materials", p); // add panel p to our panel of tabs
-		((JPanel) panels.get("Materials")).add(num_materials);
-		((JPanel) panels.get("Materials")).add(radioPanel);
+		panels.put("Food.Printing", p); // hash the p panel
+		tabbedPane.addTab("Food.Printing", p); // add panel p to our panel of tabs
+		((JPanel) panels.get("Food.Printing")).add(num_materials);
+		((JPanel) panels.get("Food.Printing")).add(radioPanel);
 
 		add(tabbedPane); // add tabs
 	}
@@ -71,13 +75,17 @@ public class MaterialOptionWindow extends JFrame implements java.awt.event.Actio
 	// opens a new window based on user's material selection.
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == one) {
-			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for 1 material", 1);
+			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for Single Material", 1);
 			wd.setDefaultCloseOperation(3);
 		} else if (e.getSource() == two) {
 			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for Base-Powder", 2);
 			wd.setDefaultCloseOperation(3);
 		} else if (e.getSource() == three) {
-			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for 3 materials", 3);
+			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for Military Demo", 3);
+			wd.setDefaultCloseOperation(3);
+		}
+		else if (e.getSource() == four) {
+			PrintOptionWindow wd = new PrintOptionWindow("Gcode Generator for Triple Materials", 4);
 			wd.setDefaultCloseOperation(3);
 		}
 	}

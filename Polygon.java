@@ -20,13 +20,6 @@ public class Polygon {
 								// radius axis and the x-axis
 	private int sides; // the number of sides
 
-	/*
-	// should materials be an ArrayList or HashMap????
-	// I propose using a HashMap because looking up a material by name is easier on the user
-	private ArrayList<Integer> materials;// a list of integers associated with
-											// each material
-	// addMaterial(), removeMaterial(), and getMaterial() have not been implemented
-	*/
 	//////////////// ******* members declaration ends here  
 
 	
@@ -200,15 +193,6 @@ public class Polygon {
 
 	}
 
-	// add new material
-	public void addMaterial(int mat) {
-
-	}
-
-	// remove material
-	public void removeMaterial(int mat) {
-
-	}
 	/////////////////// ************ Modifier definition ends here
 	/////////////////// ************************************************************///////////////////
 
