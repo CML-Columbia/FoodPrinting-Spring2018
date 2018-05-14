@@ -502,7 +502,40 @@ public class GcodeWriter {
 			if (i < bottom_layers) {
 				for (int j = 0; j < bottom_thickness; j++) {
 
-					this.fillLayer(polygon, currentHeight);
+					if(option == 4 && i < total_num_layers/2)
+					{
+						//if triple material option and printing
+						//bottom half of solid, print 2 frames
+						this.printFrame(polygon, currentHeight);
+						Polygon innerframe = new Polygon(polygon);
+						innerframe.scale(shrinkFactor);
+						this.printFrame(innerframe, currentHeight);
+						dropMaterial(currentMat);//drop dough
+						//////////////////////////
+						/////alternate fillings///
+						//////////////////////////
+						if(i % 2 != 0)
+						{
+							pickUpMaterial(mat2);//pickup filling#1
+						}
+						else
+						{
+							pickUpMaterial(mat3);//pickup filling#2
+						}
+						////////////////////////////
+						////alternate filling ends//
+						////////////////////////////
+						Polygon filling = new Polygon(innerframe);
+						filling.scale(shrinkFactor);
+						fillLayer(filling, currentHeight);
+						dropMaterial(currentMat);//drop filling#1
+						pickUpMaterial(mat1);//pickup dough
+						
+					}
+					else
+					{
+						this.fillLayer(polygon, currentHeight);
+					}
 
 					currentHeight = currentHeight + layer_height;
 				}
@@ -538,29 +571,61 @@ public class GcodeWriter {
 					} else if (option == 1) {
 						this.printFrame(polygon, currentHeight);
 					} else if (option == 4) {
-						//if triple Matrial, print crust(frame)
+						//if triple Matrial, print crust(frame)					
 						printFrame(polygon, currentHeight);
-						//then print filling after material-change
-						dropMaterial(currentMat);//drop dough
-						//////////////////////////
-						/////alternate fillings///
-						//////////////////////////
-						if(i % 2 == 0)
+						//if still printing bottom half of solid,
+						//print an inner frame 			
+						if(i < total_num_layers/2)
 						{
-							pickUpMaterial(mat2);//pickup filling#1
+							Polygon innerframe = new Polygon(polygon);
+							innerframe.scale(shrinkFactor);
+							printFrame(innerframe, currentHeight);	
+							//then print filling after material-change
+							dropMaterial(currentMat);//drop dough
+							//////////////////////////
+							/////alternate fillings///
+							//////////////////////////
+							if(i % 2 != 0)
+							{
+								pickUpMaterial(mat2);//pickup filling#1
+							}
+							else
+							{
+								pickUpMaterial(mat3);//pickup filling#2
+							}
+							////////////////////////////
+							////alternate filling ends//
+							////////////////////////////
+							Polygon filling = new Polygon(innerframe);
+							filling.scale(shrinkFactor);
+							fillLayer(filling, currentHeight);
+							dropMaterial(currentMat);//drop filling#1
+							pickUpMaterial(mat1);//pickup dough
 						}
 						else
 						{
-							pickUpMaterial(mat3);//pickup filling#2
+							//then print filling after material-change
+							dropMaterial(currentMat);//drop dough
+							//////////////////////////
+							/////alternate fillings///
+							//////////////////////////
+							if(i % 2 != 0)
+							{
+								pickUpMaterial(mat2);//pickup filling#1
+							}
+							else
+							{
+								pickUpMaterial(mat3);//pickup filling#2
+							}
+							////////////////////////////
+							////alternate filling ends//
+							////////////////////////////
+							Polygon filling = new Polygon(polygon);
+							filling.scale(shrinkFactor);
+							fillLayer(filling, currentHeight);
+							dropMaterial(currentMat);//drop filling#1
+							pickUpMaterial(mat1);//pickup dough
 						}
-						////////////////////////////
-						////alternate filling ends//
-						////////////////////////////
-						Polygon filling = new Polygon(polygon);
-						filling.scale(shrinkFactor);
-						fillLayer(filling, currentHeight);
-						dropMaterial(currentMat);//drop filling#1
-						pickUpMaterial(mat1);//pickup dough
 					}
 					currentHeight = currentHeight + layer_height;
 				}
@@ -602,7 +667,7 @@ public class GcodeWriter {
 			polygon.rotate(twist_angle);
 		}
 		///////// ****** layers printing loop ends here
-		dropMaterial(currentMat); // drop mat1 at the end of entire print
+		dropMaterial(currentMat); // drop current material at the end of entire print
 	}
 
 	// bring head to home and close file
@@ -622,9 +687,9 @@ public class GcodeWriter {
 	private void pickUpMaterial(Material mat) throws IOException {
 		if (currentMat == null) {
 			// 1. retract plunger if not already retracted
-			outPut.write(String.format("G01 E%4.2f F200\n", new Object[] { -53.00 }));
+			outPut.write(String.format("G01 E%4.2f F300\n", new Object[] { -53.00 }));
 			// 2. clear z to ceiling
-			double speed = Double.valueOf(3000.0);
+			double speed = Double.valueOf(4000.0);
 			final double z_clear = 90.00;
 			double z_insert = 42.00;// the height at which to insert syringe
 									// into its slot
@@ -662,7 +727,7 @@ public class GcodeWriter {
 		mat.updateE_curr(E);
 
 		final double z_clear = 90.00; // z_clear is defined as ceiling height
-		double speed = Double.valueOf(2000.0);
+		double speed = Double.valueOf(4000.0);
 		final double z_insert = 42.00;
 		// 1. retract plunger to -53.00
 		outPut.write(String.format("G01 E%4.2f F200.0\n", new Object[] { (-53.0) }));
